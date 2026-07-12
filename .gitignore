@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Checkpoints
+.ipynb_checkpoints/
+*.pth
+*.pt
+
+# Heavy datasets and simulations
+data_simulations/Samples8.zip
+*.npy
+*.zip
+dataset/
+
+# OS files
+.DS_Store
