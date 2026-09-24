@@ -1,21 +1,86 @@
-# DeepLense: Gravitational Lensing Substructure & PINN Detection
+# DeepLense: Gravitational Lensing Substructure Detection
 
-This project explores dark matter substructure detection in strong gravitational lensing simulations using deep learning architectures and physics-informed constraints.
+Classifying dark-matter substructure in simulated strong gravitational lensing images
+(3 classes: **no substructure**, **spherical subhalos**, **vortex**) with four models that
+share one data pipeline, one training loop and one held-out test set:
 
-## Project Structure
+| # | Model | Idea |
+|---|---|---|
+| 1 | **Custom residual CNN** | designed from scratch for 1-channel 150×150 maps |
+| 2 | **EfficientNet-B0** | ImageNet transfer learning, 1-channel stem, two-stage fine-tuning |
+| 3 | **PINN** | EfficientNet encoder + physics decoder; the **2D Poisson equation ∇²ψ = 2κ** is embedded in the loss, and the lens equation ray-traces the image to the source plane |
+| 4 | **DeiT-Tiny** | Vision Transformer with a 1-channel patch embedding at native resolution (10×10 tokens) + attention rollout |
 
-- `substructure_cnn_classifier/`
-  - `efficientnet_substructure_classifier.ipynb`: Transfer learning pipeline fine-tuning EfficientNet-B0 and custom CNNs for 3-class dark matter substructure classification (no substructure, spherical vortex, extended density).
-  - `vit_attention_experiments.ipynb`: Self-attention and Vision Transformer patch embedding experiments for single-channel lensing maps.
+## Results
 
-- `physics_informed_pinn/`
-  - `pinn_poisson_solver.ipynb`: Physics-Informed Neural Network (PINN) implementation. Embeds the 2D Poisson equation ($\nabla^2 I \approx 2\kappa$) directly into the loss function to enforce consistency between observed surface brightness $I$ and mass convergence $\kappa$.
+> Full-dataset training has not been run yet: so far the code has only been smoke-tested on a
+> laptop subset. Numbers go here after the full runs (`notebooks/05_model_comparison.ipynb`).
 
-- `data_simulations/`
-  - Contains simulated gravitational lensing `.npy` samples generated for training and evaluation. (Large simulation archives ignored via `.gitignore`).
+| Model | Params | Test accuracy | Test macro AUC |
+|---|---|---|---|
+| Custom CNN | 4.9 M | – | – |
+| EfficientNet-B0 | 4.0 M | – | – |
+| PINN (λ = 0.1) | 4.6 M | – | – |
+| DeiT-Tiny | 5.4 M | – | – |
 
-## Key Methodologies
+## Repository layout
 
-1. **Substructure Classification**: Custom CNNs and EfficientNet-B0 trained on simulated single-channel lensing images with class imbalance handling.
-2. **Physics Regularization**: Added spatial finite-difference approximation of the Poisson operator to the mean squared error loss, reducing unphysical mass prediction artifacts.
-3. **Vision Transformer (DeiT-Tiny) Adaptation**: Modified input projections to accept 1-channel astrophysical maps.
+```
+deeplense/                 importable package
+  data.py                  dataset, split policy, D4 augmentation, leakage check
+  physics.py               finite-difference ∇, ∇², Poisson residual, lens-equation ray tracing
+  models/
+    cnn.py                 LensingCNN
+    efficientnet.py        EfficientNet-B0 with 1-channel stem
+    pinn.py                LensingPINN + PINNLoss (CE + λ·‖∇²ψ̂ − 2κ̂‖²)
+    deit.py                DeiT-Tiny, 1-channel, 160-px padding, attention rollout
+  train.py                 shared training loop (warm-up+cosine, discriminative LR, freezing)
+  metrics.py               ROC/AUC, confusion matrix, plots
+scripts/train.py           CLI: train any model with its recipe
+notebooks/
+  00_data_exploration      class examples, mean-difference maps, leakage check
+  01_custom_cnn
+  02_efficientnet_transfer
+  03_pinn_poisson          physics derivation, ψ̂/κ̂/Ŝ maps, λ ablation
+  04_deit_tiny             attention rollout
+  05_model_comparison
+results/<run>/             metrics.json, history.json, figures (checkpoints are git-ignored)
+legacy/                    original notebooks, kept for reference
+```
+
+## Data
+
+DeepLense common test I data: `.npy` arrays of shape (1, 150, 150), min-max normalised.
+Place it at `data/lensing/{train,val}/{no,sphere,vort}/*.npy` (10k / 2.5k per class).
+
+**Split policy.** `train/` is split 90/10 (stratified) into training and validation; the
+best epoch is chosen on validation macro AUC. `val/` is used **only** as the final test set.
+A hash-based check found no duplicate images within or across splits.
+
+## Usage
+
+```bash
+pip install torch torchvision timm numpy scikit-learn matplotlib
+
+# smoke test (laptop, ~1 min)
+python scripts/train.py --model cnn --train-per-class 300 --test-per-class 100 --epochs 2
+
+# full runs (GPU recommended)
+python scripts/train.py --model cnn
+python scripts/train.py --model efficientnet
+python scripts/train.py --model deit
+for L in 0 0.01 0.1 1; do python scripts/train.py --model pinn --lambda-poisson $L; done
+```
+
+Each notebook has a `SMOKE` flag (subset, 2 epochs) and loads an existing full run from
+`results/` when one exists, so you can train from the CLI and analyse in the notebook.
+
+## Method notes
+
+- **Augmentation**: random element of the dihedral group D4 (90° rotations + flips). These are exact
+  symmetries of lensing images and need no interpolation, unlike arbitrary-angle rotation.
+- **1-channel adaptation of pretrained nets**: pretrained RGB kernels are *summed*, so the
+  1-channel layer responds to a gray image *x* exactly as the original did to (*x*, *x*, *x*).
+- **PINN loss**: `L = CE + λ · mean((∇²ψ̂ − 2κ̂)²)`, with the 5-point Laplacian scaled by the
+  grid spacing. With κ̂ ≥ 0 (softplus), the constraint also forces ψ̂ to be generated by
+  non-negative mass. λ = 0 is the same architecture with physics disabled (ablation baseline).

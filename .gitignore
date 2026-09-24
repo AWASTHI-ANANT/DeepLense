@@ -3,16 +3,29 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Checkpoints
+# Notebooks
 .ipynb_checkpoints/
+
+# Checkpoints (metrics.json / history.json / figures in results/ ARE tracked)
 *.pth
 *.pt
+*.npz
+
+# Smoke / sanity runs
+results/smoke/
+results/sanity/
+results/*_smoke/
+results/*_smoke.png
 
 # Heavy datasets and simulations
-data_simulations/Samples8.zip
+data/
+dataset/
+data_simulations/
 *.npy
 *.zip
-dataset/
+
+# Environments
+.venv/
 
 # OS files
 .DS_Store
