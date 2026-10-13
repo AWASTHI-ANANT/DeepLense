@@ -13,14 +13,16 @@ share one data pipeline, one training loop and one held-out test set:
 
 ## Results
 
-Held-out test set: 7,500 images (2,500 per class), never used for model selection. Single seed,
-trained on an Apple M3 (MPS), batch size 32.
+Held-out test set: 7,500 images (2,500 per class), never used for model selection. Single seed.
+Trained on an Apple M3 (MPS, batch 32), except PINN v2 (Colab T4, AMP, batch 64).
 
 | Model | Params | Test accuracy | Test macro AUC | AUC no sub | AUC subhalo | AUC vortex |
 |---|---|---|---|---|---|---|
 | **EfficientNet-B0** | 4.0 M | **93.9 %** | **0.9903** | 0.9920 | 0.9848 | 0.9942 |
-| PINN, λ = 0 (physics off) | 4.6 M | 93.9 % | 0.9899 | 0.9916 | 0.9839 | 0.9942 |
-| PINN, λ = 0.1 (Poisson loss on) | 4.6 M | 93.7 % | 0.9890 | 0.9912 | 0.9822 | 0.9937 |
+| PINN v1, λ = 0 (physics off) | 4.6 M | 93.9 % | 0.9899 | 0.9916 | 0.9839 | 0.9942 |
+| PINN v1, λ = 0.1 (Poisson loss on) | 4.6 M | 93.7 % | 0.9890 | 0.9912 | 0.9822 | 0.9937 |
+| PINN v2 lens model, λ = 0 | 5.0 M | 93.4 % | 0.9889 | 0.9915 | 0.9819 | 0.9933 |
+| PINN v2 lens model, λ = 0.1 | 5.0 M | 93.3 % | 0.9886 | 0.9914 | 0.9811 | 0.9931 |
 | DeiT-Tiny | 5.4 M | 82.1 % | 0.9440 | 0.9667 | 0.9159 | 0.9494 |
 | Custom CNN (from scratch) | 4.9 M | 56.1 % | 0.7360 | 0.7954 | 0.6102 | 0.8023 |
 
@@ -37,34 +39,45 @@ trained on an Apple M3 (MPS), batch size 32.
   (val accuracy exactly 1/3, loss = ln 3, AUC 0.548) as soon as the backbone unfroze at LR 2e-4.
   Using DeiT's LR scaling (≈3e-5 backbone at batch 32) fixed it: AUC 0.944, still rising.
   The collapsed run is kept in `results/deit_v1_collapsed/`.
-- **The PINN matches EfficientNet, but its physics branch hasn't learned lensing yet** (see below).
+- **Physics-consistent lens modelling works; physics-driven classification doesn't yet.** PINN v2
+  fits a real lens to every image, and its Poisson loss makes the learned deflection mass-consistent.
+  But every PINN variant ties EfficientNet, because the decision comes from the shared backbone (see below).
 
 ### PINN: what the physics branch actually learned
 
-| | λ = 0.1 | λ = 0 |
-|---|---|---|
-| Mean predicted deflection | ~0.15 px | ~660 px |
-| Ray-traced source vs input | identical | different |
-| Poisson residual (rms) | ~2e-3 | ~2e2 |
-
-With the Poisson loss on, the network found a trivial solution: ψ̂ ≈ 0 with a near-constant κ̂
-satisfies ∇²ψ̂ = 2κ̂ almost exactly. Zero deflection makes the ray-traced source a copy of the input.
-Without the loss, the maps are unconstrained and unphysical. Either way classification comes from the
-shared EfficientNet backbone, which is why both variants tie the baseline. The diagnostic is in
+Both versions embed the 2D Poisson equation ∇²ψ = 2κ in the loss. Full analysis in
 `notebooks/03_pinn_poisson.ipynb`.
 
-v1 also applied the lens equation in the wrong direction: it evaluated the *observed image* at
-θ − α(θ), which re-lenses the image instead of reconstructing the source. Because it learned α ≈ 0,
-this had no effect on the results above, but it is fixed in v2.
+**v1** (`pinn.py`) predicted the potential ψ̂ and convergence κ̂ freely. With the Poisson loss on, it
+found a trivial solution: ψ̂ ≈ 0 with a constant κ̂ satisfies the equation, giving a mean deflection of
+0.15 px, i.e. no lensing at all. v1 also applied the lens equation in the wrong direction (it re-lensed
+the observed image instead of reconstructing a source).
 
-**PINN v2 (in progress, `deeplense/models/pinn_lens.py`).** The network predicts an SIS + external
-shear macro-lens and an elliptical Gaussian source for each image. It renders the image with the lens
-equation, Î(θ) = S(θ − α(θ)), and must reconstruct the input. A learned perturbation δψ is tied to a
-non-negative substructure convergence κ_sub by the Poisson loss. On a 2.7k-image check, v2 learns
-Einstein radii of ~27 px (v1: ~0 px) and reconstructs the rings with median R² ≈ 0.86. Full results
-pending.
+**v2** (`pinn_lens.py`) makes lensing necessary by forward-modelling each image. A lens head predicts an
+SIS + external-shear macro-lens and an elliptical Gaussian source. The image is rendered with the lens
+equation, Î(θ) = S(θ − α_macro − ∇δψ), and must match the input. The Poisson loss ties the learned
+perturbation δψ to a non-negative substructure convergence κ_sub.
 
-![PINN physics maps](results/pinn_lambda0.1/physics_maps.png)
+| | v1, λ = 0.1 | **v2, λ = 0.1** | v2, λ = 0 |
+|---|---|---|---|
+| Test macro AUC | 0.9890 | **0.9886** | 0.9889 |
+| Macro-lens deflection | 0.15 px | **27.5 px** | 31.9 px |
+| Perturbation ∇δψ | n/a | **7.3 px, mass-backed** | 31 px, massless |
+| Image reconstruction R² | n/a | **0.965** | 0.974 |
+| Poisson residual | ~2e-3 (trivial) | **0.056** | 34 |
+
+- **v2 learns real lensing:** Einstein radii of ~27 px, with the rendered rings matching the observations.
+- **The Poisson loss has a measurable physical effect.** Without it, the network adds a 31-px deflection
+  backed by *no mass*, which is unphysical but fits pixels slightly better. With it, the perturbation is 7 px and
+  generated by a non-negative mass map.
+- **κ_sub is not yet a substructure detector.** It is the same for every class (map correlation 0.69
+  within and across classes) and traces the ring: it compensates for SIS + shear being unable to model
+  lens ellipticity. Removing the physics features from the classifier costs only ~0.001 AUC.
+
+**Next (v3):** an elliptical macro-lens (SIE), so κ_sub doesn't have to absorb ellipticity, plus priors
+that favour compact, localised substructure.
+
+![PINN v2 physics maps](results/pinn2_lambda0.1/physics_maps.png)
 
 ### DeiT-Tiny attention rollout
 
@@ -90,7 +103,7 @@ notebooks/
   00_data_exploration      class examples, mean-difference maps, leakage check
   01_custom_cnn
   02_efficientnet_transfer
-  03_pinn_poisson          physics derivation, ψ̂/κ̂/Ŝ maps, λ ablation
+  03_pinn_poisson          physics derivation; v1 and v2 maps, λ ablations and diagnostics
   04_deit_tiny             attention rollout
   05_model_comparison
   colab_train_pinn2        train PINN v2 on a Colab T4 (AMP, per-epoch checkpoints on Drive, resume)
