@@ -1,0 +1,46 @@
+{
+  "run": "efficientnet",
+  "best_epoch": 24,
+  "best_val_macro_auc": 0.9902333333333334,
+  "test": {
+    "accuracy": 0.9386666666666666,
+    "auc_per_class": {
+      "No substructure": 0.9919532800000002,
+      "Subhalo (sphere)": 0.98482784,
+      "Vortex": 0.9941966400000001
+    },
+    "macro_auc": 0.9903259200000001,
+    "confusion_matrix": [
+      [
+        2466,
+        31,
+        3
+      ],
+      [
+        192,
+        2219,
+        89
+      ],
+      [
+        57,
+        88,
+        2355
+      ]
+    ],
+    "n": 7500
+  },
+  "params": 4010815,
+  "config": {
+    "epochs": 25,
+    "lr": 0.001,
+    "backbone_lr_mult": 0.3,
+    "weight_decay": 0.01,
+    "warmup_epochs": 1,
+    "freeze_epochs": 1,
+    "label_smoothing": 0.0,
+    "grad_clip": 1.0,
+    "patience": null,
+    "log_every": 0,
+    "extra": {}
+  }
+}

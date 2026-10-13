@@ -1,0 +1,46 @@
+{
+  "run": "cnn",
+  "best_epoch": 30,
+  "best_val_macro_auc": 0.7374586666666668,
+  "test": {
+    "accuracy": 0.5605333333333333,
+    "auc_per_class": {
+      "No substructure": 0.7953992000000001,
+      "Subhalo (sphere)": 0.61021192,
+      "Vortex": 0.8022815999999999
+    },
+    "macro_auc": 0.73596424,
+    "confusion_matrix": [
+      [
+        1992,
+        292,
+        216
+      ],
+      [
+        1165,
+        515,
+        820
+      ],
+      [
+        558,
+        245,
+        1697
+      ]
+    ],
+    "n": 7500
+  },
+  "params": 4901539,
+  "config": {
+    "epochs": 30,
+    "lr": 0.001,
+    "backbone_lr_mult": 1.0,
+    "weight_decay": 0.05,
+    "warmup_epochs": 1,
+    "freeze_epochs": 0,
+    "label_smoothing": 0.0,
+    "grad_clip": 1.0,
+    "patience": null,
+    "log_every": 0,
+    "extra": {}
+  }
+}

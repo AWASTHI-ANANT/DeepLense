@@ -1,0 +1,27 @@
+[pinn_lambda0] 4,637,281 trainable params | device=mps | train=27000 val=3000 test=7500
+  ep   1/25  train loss 1.1142 acc 0.3523  val loss 1.1024 acc 0.3753 AUC 0.5575  ce 1.114  poisson 599.2  [174s] *
+  ep   2/25  train loss 1.0233 acc 0.4578  val loss 0.8598 acc 0.5873 AUC 0.7720  ce 1.023  poisson 2966  [431s] *
+  ep   3/25  train loss 0.7821 acc 0.6402  val loss 0.6747 acc 0.7133 AUC 0.8797  ce 0.7821  poisson 1608  [424s] *
+  ep   4/25  train loss 0.6213 acc 0.7376  val loss 0.5251 acc 0.7720 AUC 0.9226  ce 0.6213  poisson 5575  [424s] *
+  ep   5/25  train loss 0.5270 acc 0.7837  val loss 0.4725 acc 0.8017 AUC 0.9450  ce 0.527  poisson 8906  [428s] *
+  ep   6/25  train loss 0.4555 acc 0.8172  val loss 0.4784 acc 0.8253 AUC 0.9512  ce 0.4555  poisson 2670  [425s] *
+  ep   7/25  train loss 0.3964 acc 0.8443  val loss 0.3549 acc 0.8620 AUC 0.9669  ce 0.3964  poisson 2200  [434s] *
+  ep   8/25  train loss 0.3609 acc 0.8629  val loss 0.3258 acc 0.8700 AUC 0.9725  ce 0.3609  poisson 2956  [428s] *
+  ep   9/25  train loss 0.3289 acc 0.8760  val loss 0.3889 acc 0.8650 AUC 0.9685  ce 0.3289  poisson 9798  [428s]
+  ep  10/25  train loss 0.3074 acc 0.8830  val loss 0.2921 acc 0.8900 AUC 0.9771  ce 0.3074  poisson 6.879e+04  [425s] *
+  ep  11/25  train loss 0.2819 acc 0.8955  val loss 0.2822 acc 0.8943 AUC 0.9780  ce 0.2819  poisson 5.019e+04  [428s] *
+  ep  12/25  train loss 0.2506 acc 0.9087  val loss 0.2611 acc 0.9040 AUC 0.9815  ce 0.2506  poisson 2.563e+04  [424s] *
+  ep  13/25  train loss 0.2373 acc 0.9108  val loss 0.2163 acc 0.9197 AUC 0.9858  ce 0.2373  poisson 2.128e+04  [424s] *
+  ep  14/25  train loss 0.2256 acc 0.9162  val loss 0.1999 acc 0.9237 AUC 0.9880  ce 0.2256  poisson 2.383e+04  [428s] *
+  ep  15/25  train loss 0.2112 acc 0.9236  val loss 0.1997 acc 0.9287 AUC 0.9877  ce 0.2112  poisson 1.651e+04  [430s]
+  ep  16/25  train loss 0.2003 acc 0.9273  val loss 0.1975 acc 0.9280 AUC 0.9896  ce 0.2003  poisson 1.438e+04  [427s] *
+  ep  17/25  train loss 0.1843 acc 0.9331  val loss 0.2216 acc 0.9207 AUC 0.9893  ce 0.1843  poisson 1.56e+04  [425s]
+  ep  18/25  train loss 0.1746 acc 0.9357  val loss 0.1781 acc 0.9377 AUC 0.9907  ce 0.1746  poisson 4.395e+04  [429s] *
+  ep  19/25  train loss 0.1701 acc 0.9382  val loss 0.1783 acc 0.9367 AUC 0.9912  ce 0.1701  poisson 3.858e+04  [430s] *
+  ep  20/25  train loss 0.1572 acc 0.9433  val loss 0.1932 acc 0.9327 AUC 0.9904  ce 0.1572  poisson 4.33e+04  [434s]
+  ep  21/25  train loss 0.1547 acc 0.9446  val loss 0.1830 acc 0.9383 AUC 0.9912  ce 0.1547  poisson 3.928e+04  [431s]
+  ep  22/25  train loss 0.1481 acc 0.9468  val loss 0.1786 acc 0.9363 AUC 0.9915  ce 0.1481  poisson 4.579e+04  [433s] *
+  ep  23/25  train loss 0.1468 acc 0.9479  val loss 0.1790 acc 0.9390 AUC 0.9917  ce 0.1468  poisson 4.678e+04  [435s] *
+  ep  24/25  train loss 0.1391 acc 0.9493  val loss 0.1839 acc 0.9380 AUC 0.9918  ce 0.1391  poisson 4.675e+04  [430s] *
+  ep  25/25  train loss 0.1420 acc 0.9508  val loss 0.1840 acc 0.9383 AUC 0.9917  ce 0.142  poisson 4.751e+04  [430s]
+[pinn_lambda0] best epoch 24  test acc 0.9389  test macro AUC 0.9899

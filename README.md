@@ -13,15 +13,55 @@ share one data pipeline, one training loop and one held-out test set:
 
 ## Results
 
-> Full-dataset training has not been run yet: so far the code has only been smoke-tested on a
-> laptop subset. Numbers go here after the full runs (`notebooks/05_model_comparison.ipynb`).
+Held-out test set: 7,500 images (2,500 per class), never used for model selection. Single seed,
+trained on an Apple M3 (MPS), batch size 32.
 
-| Model | Params | Test accuracy | Test macro AUC |
-|---|---|---|---|
-| Custom CNN | 4.9 M | – | – |
-| EfficientNet-B0 | 4.0 M | – | – |
-| PINN (λ = 0.1) | 4.6 M | – | – |
-| DeiT-Tiny | 5.4 M | – | – |
+| Model | Params | Test accuracy | Test macro AUC | AUC no sub | AUC subhalo | AUC vortex |
+|---|---|---|---|---|---|---|
+| **EfficientNet-B0** | 4.0 M | **93.9 %** | **0.9903** | 0.9920 | 0.9848 | 0.9942 |
+| PINN, λ = 0 (physics off) | 4.6 M | 93.9 % | 0.9899 | 0.9916 | 0.9839 | 0.9942 |
+| PINN, λ = 0.1 (Poisson loss on) | 4.6 M | 93.7 % | 0.9890 | 0.9912 | 0.9822 | 0.9937 |
+| DeiT-Tiny | 5.4 M | 82.1 % | 0.9440 | 0.9667 | 0.9159 | 0.9494 |
+| Custom CNN (from scratch) | 4.9 M | 56.1 % | 0.7360 | 0.7954 | 0.6102 | 0.8023 |
+
+![ROC comparison](results/comparison_roc.png)
+
+### Takeaways
+
+- **Transfer learning dominates.** At similar size, pretrained EfficientNet-B0 beats the from-scratch
+  CNN by 0.25 AUC. The CNN stayed at chance for ~18 epochs before finding the signal and was still
+  improving at epoch 30: under-trained, not incapable.
+- **Subhalos are the hardest class** for every model. The most common error is subhalo → no
+  substructure: small point-like subhalos barely perturb the Einstein ring.
+- **DeiT-Tiny needed ViT-specific fine-tuning.** The first run collapsed to a constant prediction
+  (val accuracy exactly 1/3, loss = ln 3, AUC 0.548) as soon as the backbone unfroze at LR 2e-4.
+  Using DeiT's LR scaling (≈3e-5 backbone at batch 32) fixed it: AUC 0.944, still rising.
+  The collapsed run is kept in `results/deit_v1_collapsed/`.
+- **The PINN matches EfficientNet, but its physics branch hasn't learned lensing yet** (see below).
+
+### PINN: what the physics branch actually learned
+
+| | λ = 0.1 | λ = 0 |
+|---|---|---|
+| Mean predicted deflection | ~0.15 px | ~660 px |
+| Ray-traced source vs input | identical | different |
+| Poisson residual (rms) | ~2e-3 | ~2e2 |
+
+With the Poisson loss on, the network found a trivial solution: ψ̂ ≈ 0 with a near-constant κ̂
+satisfies ∇²ψ̂ = 2κ̂ almost exactly. Zero deflection makes the ray-traced source a copy of the input.
+Without the loss, the maps are unconstrained and unphysical. Either way classification comes from the
+shared EfficientNet backbone, which is why both variants tie the baseline. The diagnostic is in
+`notebooks/03_pinn_poisson.ipynb`.
+
+**Next:** anchor the potential with a parametric macro-lens, ψ = ψ_SIS(θ_E, centre) + δψ, and tie δψ
+to a substructure convergence κ_sub through the Poisson loss. This removes the zero-deflection
+solution and focuses the physics signal on substructure.
+
+![PINN physics maps](results/pinn_lambda0.1/physics_maps.png)
+
+### DeiT-Tiny attention rollout
+
+![DeiT attention rollout](results/deit/attention_rollout.png)
 
 ## Repository layout
 
@@ -65,12 +105,16 @@ pip install torch torchvision timm numpy scikit-learn matplotlib
 # smoke test (laptop, ~1 min)
 python scripts/train.py --model cnn --train-per-class 300 --test-per-class 100 --epochs 2
 
-# full runs (GPU recommended)
-python scripts/train.py --model cnn
+# full runs, one at a time
 python scripts/train.py --model efficientnet
-python scripts/train.py --model deit
-for L in 0 0.01 0.1 1; do python scripts/train.py --model pinn --lambda-poisson $L; done
+python scripts/train.py --model pinn --lambda-poisson 0.1
+
+# or everything sequentially, with logs in results/logs/ (skips finished runs)
+PYTHON=python scripts/run_all.sh cnn efficientnet deit pinn:0.1 pinn:0
 ```
+
+Approximate full-run times on an 8 GB Apple M3 at batch 32: CNN 1.3 h, EfficientNet 2.5 h,
+DeiT 1.5 h, PINN 3 h each.
 
 Each notebook has a `SMOKE` flag (subset, 2 epochs) and loads an existing full run from
 `results/` when one exists, so you can train from the CLI and analyse in the notebook.

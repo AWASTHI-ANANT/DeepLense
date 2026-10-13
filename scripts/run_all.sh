@@ -20,7 +20,7 @@ run() {
   if [[ "$job" == *:* ]]; then lam="${job#*:}"; name="pinn_lambda${lam}"; args+=(--lambda-poisson "$lam"); fi
   if [ -f "$OUT/$name/metrics.json" ]; then echo "skip $name (done)"; return; fi
   echo "=== $name  $(date '+%F %T')"
-  "$PY" scripts/train.py --model "$model" --out-dir "$OUT" ${args[@]+"${args[@]}"} $EXTRA 2>&1 | grep -v HF_TOKEN | tee "$OUT/logs/$name.log"
+  "$PY" -u scripts/train.py --model "$model" --out-dir "$OUT" ${args[@]+"${args[@]}"} $EXTRA 2>&1 | grep --line-buffered -v HF_TOKEN | tee "$OUT/logs/$name.log"
 }
 
 CAFF=""; command -v caffeinate >/dev/null && CAFF="caffeinate -i"

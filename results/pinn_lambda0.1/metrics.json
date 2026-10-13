@@ -1,0 +1,48 @@
+{
+  "run": "pinn_lambda0.1",
+  "best_epoch": 25,
+  "best_val_macro_auc": 0.9910649166666667,
+  "test": {
+    "accuracy": 0.9369333333333333,
+    "auc_per_class": {
+      "No substructure": 0.99116472,
+      "Subhalo (sphere)": 0.98222304,
+      "Vortex": 0.99367892
+    },
+    "macro_auc": 0.9890222266666667,
+    "confusion_matrix": [
+      [
+        2460,
+        29,
+        11
+      ],
+      [
+        177,
+        2215,
+        108
+      ],
+      [
+        65,
+        83,
+        2352
+      ]
+    ],
+    "n": 7500
+  },
+  "params": 4637281,
+  "config": {
+    "epochs": 25,
+    "lr": 0.001,
+    "backbone_lr_mult": 0.3,
+    "weight_decay": 0.01,
+    "warmup_epochs": 1,
+    "freeze_epochs": 1,
+    "label_smoothing": 0.0,
+    "grad_clip": 1.0,
+    "patience": null,
+    "log_every": 0,
+    "extra": {
+      "lambda_poisson": 0.1
+    }
+  }
+}

@@ -1,0 +1,32 @@
+[deit] 5,408,259 trainable params | device=mps | train=27000 val=3000 test=7500
+  ep   1/30  train loss 1.1320 acc 0.3362  val loss 1.0968 acc 0.3560 AUC 0.5287    [53s] *
+  ep   2/30  train loss 1.0654 acc 0.4018  val loss 1.0137 acc 0.4683 AUC 0.7067    [156s] *
+  ep   3/30  train loss 0.9370 acc 0.5310  val loss 0.8473 acc 0.6007 AUC 0.7842    [151s] *
+  ep   4/30  train loss 0.8543 acc 0.5912  val loss 0.8047 acc 0.6243 AUC 0.8038    [152s] *
+  ep   5/30  train loss 0.7862 acc 0.6344  val loss 0.7531 acc 0.6443 AUC 0.8340    [156s] *
+  ep   6/30  train loss 0.7439 acc 0.6574  val loss 0.7012 acc 0.6840 AUC 0.8589    [162s] *
+  ep   7/30  train loss 0.7061 acc 0.6799  val loss 0.7054 acc 0.6780 AUC 0.8633    [156s] *
+  ep   8/30  train loss 0.6725 acc 0.6995  val loss 0.7116 acc 0.6760 AUC 0.8654    [157s] *
+  ep   9/30  train loss 0.6487 acc 0.7179  val loss 0.7004 acc 0.7040 AUC 0.8764    [159s] *
+  ep  10/30  train loss 0.6179 acc 0.7334  val loss 0.7131 acc 0.6837 AUC 0.8840    [159s] *
+  ep  11/30  train loss 0.5992 acc 0.7414  val loss 0.5752 acc 0.7513 AUC 0.9021    [161s] *
+  ep  12/30  train loss 0.5745 acc 0.7562  val loss 0.5665 acc 0.7557 AUC 0.9083    [163s] *
+  ep  13/30  train loss 0.5500 acc 0.7656  val loss 0.5279 acc 0.7760 AUC 0.9169    [164s] *
+  ep  14/30  train loss 0.5322 acc 0.7777  val loss 0.5278 acc 0.7727 AUC 0.9179    [163s] *
+  ep  15/30  train loss 0.5068 acc 0.7884  val loss 0.5271 acc 0.7687 AUC 0.9174    [168s]
+  ep  16/30  train loss 0.4881 acc 0.7962  val loss 0.5202 acc 0.7833 AUC 0.9271    [167s] *
+  ep  17/30  train loss 0.4733 acc 0.8038  val loss 0.4932 acc 0.7847 AUC 0.9286    [167s] *
+  ep  18/30  train loss 0.4562 acc 0.8112  val loss 0.4758 acc 0.7947 AUC 0.9335    [167s] *
+  ep  19/30  train loss 0.4377 acc 0.8216  val loss 0.4987 acc 0.7803 AUC 0.9326    [169s]
+  ep  20/30  train loss 0.4234 acc 0.8292  val loss 0.4646 acc 0.8050 AUC 0.9381    [167s] *
+  ep  21/30  train loss 0.4049 acc 0.8354  val loss 0.4669 acc 0.8010 AUC 0.9391    [169s] *
+  ep  22/30  train loss 0.3977 acc 0.8373  val loss 0.4579 acc 0.8097 AUC 0.9401    [170s] *
+  ep  23/30  train loss 0.3855 acc 0.8434  val loss 0.4549 acc 0.8077 AUC 0.9412    [164s] *
+  ep  24/30  train loss 0.3778 acc 0.8485  val loss 0.4434 acc 0.8143 AUC 0.9445    [163s] *
+  ep  25/30  train loss 0.3639 acc 0.8531  val loss 0.4400 acc 0.8113 AUC 0.9453    [161s] *
+  ep  26/30  train loss 0.3546 acc 0.8572  val loss 0.4396 acc 0.8157 AUC 0.9463    [164s] *
+  ep  27/30  train loss 0.3535 acc 0.8598  val loss 0.4371 acc 0.8157 AUC 0.9471    [164s] *
+  ep  28/30  train loss 0.3496 acc 0.8595  val loss 0.4380 acc 0.8167 AUC 0.9471    [163s] *
+  ep  29/30  train loss 0.3453 acc 0.8635  val loss 0.4361 acc 0.8170 AUC 0.9473    [165s] *
+  ep  30/30  train loss 0.3437 acc 0.8638  val loss 0.4359 acc 0.8160 AUC 0.9473    [165s]
+[deit] best epoch 29  test acc 0.8209  test macro AUC 0.9440

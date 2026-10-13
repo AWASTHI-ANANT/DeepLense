@@ -1,0 +1,46 @@
+{
+  "run": "deit",
+  "best_epoch": 1,
+  "best_val_macro_auc": 0.5416199166666668,
+  "test": {
+    "accuracy": 0.3698666666666667,
+    "auc_per_class": {
+      "No substructure": 0.56565268,
+      "Subhalo (sphere)": 0.54149504,
+      "Vortex": 0.53733568
+    },
+    "macro_auc": 0.5481611333333333,
+    "confusion_matrix": [
+      [
+        770,
+        1114,
+        616
+      ],
+      [
+        545,
+        1276,
+        679
+      ],
+      [
+        582,
+        1190,
+        728
+      ]
+    ],
+    "n": 7500
+  },
+  "params": 5408259,
+  "config": {
+    "epochs": 30,
+    "lr": 0.0005,
+    "backbone_lr_mult": 0.4,
+    "weight_decay": 0.05,
+    "warmup_epochs": 2,
+    "freeze_epochs": 1,
+    "label_smoothing": 0.0,
+    "grad_clip": 1.0,
+    "patience": null,
+    "log_every": 0,
+    "extra": {}
+  }
+}

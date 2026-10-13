@@ -31,8 +31,11 @@ RECIPES = {
                                 warmup_epochs=1, freeze_epochs=1),
     "pinn":         TrainConfig(epochs=25, lr=1e-3, backbone_lr_mult=0.3, weight_decay=1e-2,
                                 warmup_epochs=1, freeze_epochs=1),
-    "deit":         TrainConfig(epochs=30, lr=5e-4, backbone_lr_mult=0.4, weight_decay=5e-2,
-                                warmup_epochs=2, freeze_epochs=1),
+    # ViTs collapse to a constant prediction if fine-tuned too hard: backbone LR 2e-4 did
+    # exactly that (val acc stuck at 1/3, loss = ln 3). DeiT's recipe scales as
+    # 5e-4 * batch / 512, i.e. ~3e-5 at batch 32, so: head 3e-4, backbone 3e-5.
+    "deit":         TrainConfig(epochs=30, lr=3e-4, backbone_lr_mult=0.1, weight_decay=5e-2,
+                                warmup_epochs=3, freeze_epochs=1),
 }
 
 
