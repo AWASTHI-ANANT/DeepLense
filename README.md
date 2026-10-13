@@ -74,8 +74,14 @@ perturbation δψ to a non-negative substructure convergence κ_sub.
   within and across classes) and traces the ring: it compensates for SIS + shear being unable to model
   lens ellipticity. Removing the physics features from the classifier costs only ~0.001 AUC.
 
-**Next (v3):** an elliptical macro-lens (SIE), so κ_sub doesn't have to absorb ellipticity, plus priors
-that favour compact, localised substructure.
+**v3 (implemented, training).** Built after reading the DeepLenseSim generator (lenstronomy: SIE +
+external-shear main halo, elliptical Sérsic n = 1 source, Gaussian PSF, point-mass CDM subhalos, and a
+line of point masses for vortices). The macro-lens and source now match the generator's conventions,
+verified against lenstronomy to ~1e-6, and direct fits reach R² ≈ 0.99. κ_sub comes from a U-Net
+over multi-scale encoder features. Sparsity and minimum-deflection priors stop the perturbation from
+exploiting the mass-in-empty-sky and massless-harmonic degeneracies. The key experiment is a
+**physics-only** classifier that sees only the residual, κ_sub and lens parameters, with no gradient
+from the classification loss into the physics maps (`notebooks/colab_train_pinn3.ipynb`).
 
 ![PINN v2 physics maps](results/pinn2_lambda0.1/physics_maps.png)
 
@@ -93,7 +99,8 @@ deeplense/                 importable package
     cnn.py                 LensingCNN
     efficientnet.py        EfficientNet-B0 with 1-channel stem
     pinn.py                PINN v1 + PINNLoss (CE + λ·‖∇²ψ̂ − 2κ̂‖²); superseded, see findings
-    pinn_lens.py           PINN v2: SIS+shear macro-lens + Gaussian source, rendered with the lens
+    pinn_lens.py           PINN v2 (SIS+shear, Gaussian source) and v3 (SIE+shear, Sérsic source, PSF,
+                           U-Net substructure decoder, physics-only mode), rendered with the lens
                            equation; Poisson loss on the substructure perturbation (δψ ↔ κ_sub)
     deit.py                DeiT-Tiny, 1-channel, 160-px padding, attention rollout
   train.py                 shared training loop (warm-up+cosine, discriminative LR, freezing)
@@ -106,7 +113,7 @@ notebooks/
   03_pinn_poisson          physics derivation; v1 and v2 maps, λ ablations and diagnostics
   04_deit_tiny             attention rollout
   05_model_comparison
-  colab_train_pinn2        train PINN v2 on a Colab T4 (AMP, per-epoch checkpoints on Drive, resume)
+  colab_train_pinn2/3      train PINN v2 / v3 on a Colab T4 (AMP, per-epoch checkpoints on Drive, resume)
 results/<run>/             metrics.json, history.json, figures (checkpoints are git-ignored)
 legacy/                    original notebooks, kept for reference
 ```

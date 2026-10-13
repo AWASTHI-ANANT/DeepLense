@@ -4,13 +4,14 @@ from .cnn import LensingCNN
 from .deit import DeiTTinyClassifier
 from .efficientnet import EfficientNetClassifier
 from .pinn import LensingPINN, PINNLoss
-from .pinn_lens import LensingPINNv2, PINNv2Loss
+from .pinn_lens import LensingPINNv2, LensingPINNv3, PINNv2Loss
 
 MODELS = {
     "cnn": LensingCNN,
     "efficientnet": EfficientNetClassifier,
     "pinn": LensingPINN,
     "pinn2": LensingPINNv2,
+    "pinn3": LensingPINNv3,
     "deit": DeiTTinyClassifier,
 }
 
@@ -22,4 +23,4 @@ def build_model(name: str, **kwargs) -> nn.Module:
 
 
 __all__ = ["MODELS", "build_model", "LensingCNN", "EfficientNetClassifier",
-           "LensingPINN", "PINNLoss", "LensingPINNv2", "PINNv2Loss", "DeiTTinyClassifier"]
+           "LensingPINN", "PINNLoss", "LensingPINNv2", "LensingPINNv3", "PINNv2Loss", "DeiTTinyClassifier"]

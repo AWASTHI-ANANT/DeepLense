@@ -10,6 +10,7 @@ Full run (GPU recommended):
     python scripts/train.py --model pinn --lambda-poisson 0.1
     python scripts/train.py --model deit
     python scripts/train.py --model pinn2 --amp --resume      # CUDA (e.g. Colab T4)
+    python scripts/train.py --model pinn3 --physics-only --amp --resume
 """
 
 import argparse
@@ -39,6 +40,8 @@ RECIPES = {
                                 warmup_epochs=3, freeze_epochs=1),
     "pinn2":        TrainConfig(epochs=25, lr=1e-3, backbone_lr_mult=0.3, weight_decay=1e-2,
                                 warmup_epochs=1, freeze_epochs=1),
+    "pinn3":        TrainConfig(epochs=25, lr=1e-3, backbone_lr_mult=0.3, weight_decay=1e-2,
+                                warmup_epochs=1, freeze_epochs=1),
 }
 
 
@@ -58,7 +61,10 @@ def main(argv=None):
     p.add_argument("--label-smoothing", type=float)
     p.add_argument("--lambda-poisson", type=float, default=0.1, help="PINN Poisson-loss weight")
     p.add_argument("--lambda-rec", type=float, default=1.0, help="PINN v2 image-reconstruction weight")
-    p.add_argument("--lambda-sparse", type=float, default=0.01, help="PINN v2 kappa_sub sparsity weight")
+    p.add_argument("--lambda-sparse", type=float, default=None, help="kappa_sub sparsity weight (v2 0.01, v3 0.1)")
+    p.add_argument("--lambda-defl", type=float, default=None, help="v3 minimum-deflection prior weight (v3 default 30)")
+    p.add_argument("--physics-only", action="store_true",
+                   help="PINN v3: classify from physics outputs only (detached from the CE loss)")
     p.add_argument("--amp", action="store_true", help="mixed precision (CUDA only)")
     p.add_argument("--resume", action="store_true", help="continue from <out-dir>/<run>/last.pt")
     p.add_argument("--no-pretrained", action="store_true")
@@ -82,6 +88,8 @@ def main(argv=None):
                                        num_workers=a.num_workers, seed=a.seed))
 
     kwargs = {} if a.model == "cnn" else {"pretrained": not a.no_pretrained}
+    if a.model == "pinn3":
+        kwargs["physics_only"] = a.physics_only
     model = build_model(a.model, **kwargs)
 
     criterion = None
@@ -90,11 +98,15 @@ def main(argv=None):
         criterion = PINNLoss(a.lambda_poisson, cfg.label_smoothing)
         cfg = replace(cfg, extra={"lambda_poisson": a.lambda_poisson})
         run_name = a.run_name or f"pinn_lambda{a.lambda_poisson:g}"
-    elif a.model == "pinn2":
-        criterion = PINNv2Loss(a.lambda_rec, a.lambda_poisson, a.lambda_sparse, cfg.label_smoothing)
+    elif a.model in ("pinn2", "pinn3"):
+        v3 = a.model == "pinn3"
+        sparse = a.lambda_sparse if a.lambda_sparse is not None else (0.1 if v3 else 0.01)
+        defl = a.lambda_defl if a.lambda_defl is not None else (30.0 if v3 else 0.0)
+        criterion = PINNv2Loss(a.lambda_rec, a.lambda_poisson, sparse, cfg.label_smoothing, lambda_defl=defl)
         cfg = replace(cfg, extra={"lambda_rec": a.lambda_rec, "lambda_poisson": a.lambda_poisson,
-                                  "lambda_sparse": a.lambda_sparse})
-        run_name = a.run_name or f"pinn2_lambda{a.lambda_poisson:g}"
+                                  "lambda_sparse": sparse, "lambda_defl": defl, "physics_only": a.physics_only})
+        tag = "_physonly" if a.model == "pinn3" and a.physics_only else ""
+        run_name = a.run_name or f"{a.model}{tag}_lambda{a.lambda_poisson:g}"
 
     fit(model, loaders, cfg, device, criterion=criterion, out_dir=a.out_dir, run_name=run_name, resume=a.resume)
 

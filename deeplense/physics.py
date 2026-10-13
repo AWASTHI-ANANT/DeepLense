@@ -91,6 +91,71 @@ def sis_shear_deflection(theta, theta_e, cx, cy, g1, g2, core: float = 0.005):
     return torch.stack([ax, ay], dim=1)
 
 
+def ellipticity_to_phi_q(e1, e2, max_c: float = 0.8, min_c: float = 1e-3):
+    """lenstronomy's (e1, e2) -> (position angle, axis ratio q = minor/major).
+
+    `min_c` keeps q < 1 so the SIE expressions (which divide by sqrt(1 - q^2)) stay finite.
+    """
+    phi = 0.5 * torch.atan2(e2, e1)
+    c = torch.sqrt(e1 ** 2 + e2 ** 2 + min_c ** 2).clamp(max=max_c)
+    return phi, (1 - c) / (1 + c)
+
+
+def sie_deflection(theta, theta_e, e1, e2, cx, cy, s_scale: float = 1e-3):
+    """Singular isothermal ellipsoid deflection, matching lenstronomy's 'SIE' convention.
+
+    theta_e is lenstronomy's product-averaged Einstein radius. Keeton & Kochanek (1998):
+        alpha_x' = b / sqrt(1-q^2) * arctan (sqrt(1-q^2) x' / (psi + s))
+        alpha_y' = b / sqrt(1-q^2) * arctanh(sqrt(1-q^2) y' / (psi + q^2 s)),   psi = sqrt(q^2 (s^2 + x'^2) + y'^2)
+    in the frame rotated by the position angle. theta: (B, H, W, 2) -> (B, 2, H, W).
+    """
+    v = lambda t: t[:, None, None]
+    phi, q = ellipticity_to_phi_q(e1, e2)
+    b = theta_e / torch.sqrt((1 + q ** 2) / (2 * q)) * torch.sqrt((1 + q ** 2) / 2)
+    s = s_scale / torch.sqrt(q)
+    cp, sp, q, b, s = v(torch.cos(phi)), v(torch.sin(phi)), v(q), v(b), v(s)
+    dx, dy = theta[..., 0] - v(cx), theta[..., 1] - v(cy)
+    x_, y_ = cp * dx + sp * dy, -sp * dx + cp * dy
+    psi = torch.sqrt(q ** 2 * (s ** 2 + x_ ** 2) + y_ ** 2)
+    k = torch.sqrt(1 - q ** 2)
+    fx = b / k * torch.atan(k * x_ / (psi + s))
+    fy = b / k * torch.atanh((k * y_ / (psi + q ** 2 * s)).clamp(-1 + 1e-6, 1 - 1e-6))
+    return torch.stack([cp * fx - sp * fy, sp * fx + cp * fy], dim=1)
+
+
+def shear_deflection(theta, g1, g2):
+    """External shear, psi = 1/2 g1 (x^2 - y^2) + g2 x y (massless: laplacian psi = 0)."""
+    v = lambda t: t[:, None, None]
+    x, y = theta[..., 0], theta[..., 1]
+    return torch.stack([v(g1) * x + v(g2) * y, v(g2) * x - v(g1) * y], dim=1)
+
+
+def sersic_source(beta, sx, sy, r_eff, n, e1, e2, amp, r_floor: float = 1e-4):
+    """Elliptical Sersic surface brightness at source-plane positions beta (lenstronomy
+    'SERSIC_ELLIPSE', product-averaged radius):  I = amp * exp(-b_n ((R / R_eff)^(1/n) - 1)),
+    b_n = 1.9992 n - 0.3271.  beta: (B, H, W, 2) -> (B, 1, H, W).
+    """
+    v = lambda t: t[:, None, None]
+    phi, q = ellipticity_to_phi_q(e1, e2)
+    cp, sp, q = v(torch.cos(phi)), v(torch.sin(phi)), v(q)
+    bx, by = beta[..., 0] - v(sx), beta[..., 1] - v(sy)
+    x_, y_ = (cp * bx + sp * by) * torch.sqrt(q), (-sp * bx + cp * by) / torch.sqrt(q)
+    r = torch.sqrt(x_ ** 2 + y_ ** 2 + r_floor ** 2)
+    bn = 1.9992 * v(n) - 0.3271
+    return (v(amp) * torch.exp(-bn * ((r / v(r_eff)) ** (1 / v(n)) - 1)))[:, None]
+
+
+def gaussian_psf(image, fwhm_px: float = 1.74):
+    """Convolve (B, 1, H, W) with a normalised Gaussian PSF (DeepLenseSim: FWHM 0.087" = 1.74 px)."""
+    sigma = fwhm_px / 2.3548
+    r = int(3 * sigma + 1)
+    ax = torch.arange(-r, r + 1, device=image.device, dtype=image.dtype)
+    k1 = torch.exp(-0.5 * (ax / sigma) ** 2)
+    k = (k1[:, None] * k1[None, :])
+    k = (k / k.sum()).view(1, 1, 2 * r + 1, 2 * r + 1)
+    return F.conv2d(image, k, padding=r)
+
+
 def gaussian_source(beta, sx, sy, sigma, q, phi, amp):
     """Elliptical Gaussian surface brightness evaluated at source-plane positions beta.
 
