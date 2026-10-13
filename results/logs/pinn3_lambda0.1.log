@@ -1,0 +1,32 @@
+Downloading: "https://download.pytorch.org/models/efficientnet_b0_rwightman-7f5810bc.pth" to /root/.cache/torch/hub/checkpoints/efficientnet_b0_rwightman-7f5810bc.pth
+
+  0%|          | 0.00/20.5M [00:00<?, ?B/s]
+ 59%|█████▉    | 12.1M/20.5M [00:00<00:00, 127MB/s]
+100%|██████████| 20.5M/20.5M [00:00<00:00, 149MB/s]
+[pinn3_lambda0.1] 5,603,261 trainable params | device=cuda | train=27000 val=3000 test=7500
+  ep   1/25  train loss 1.5580 acc 0.3526  val loss 1.2867 acc 0.3657 AUC 0.5487  ce 1.116  rec 0.3695  poisson 0.5101  kappa_sub 0.001335  theta_e_px 26.3  defl_sub 0.0007131  [79s] *
+  ep   2/25  train loss 1.2362 acc 0.4270  val loss 1.0522 acc 0.5163 AUC 0.7308  ce 1.067  rec 0.139  poisson 0.1398  kappa_sub 0.0002843  theta_e_px 25.8  defl_sub 0.0005506  [107s] *
+  ep   3/25  train loss 0.8936 acc 0.6194  val loss 0.7080 acc 0.7073 AUC 0.8758  ce 0.8138  rec 0.0697  poisson 0.04953  kappa_sub 4.97e-05  theta_e_px 25.96  defl_sub 0.0001706  [105s] *
+  ep   4/25  train loss 0.6608 acc 0.7343  val loss 0.6509 acc 0.7550 AUC 0.9215  ce 0.608  rec 0.04699  poisson 0.02746  kappa_sub 2.44e-05  theta_e_px 25.88  defl_sub 0.0001006  [106s] *
+  ep   5/25  train loss 0.5411 acc 0.7945  val loss 0.4815 acc 0.8213 AUC 0.9469  ce 0.4967  rec 0.03984  poisson 0.0218  kappa_sub 8.472e-06  theta_e_px 26.02  defl_sub 7.793e-05  [105s] *
+  ep   6/25  train loss 0.4688 acc 0.8292  val loss 0.4569 acc 0.8327 AUC 0.9566  ce 0.4274  rec 0.03736  poisson 0.01992  kappa_sub 9.918e-06  theta_e_px 26  defl_sub 7.03e-05  [106s] *
+  ep   7/25  train loss 0.4204 acc 0.8497  val loss 0.3753 acc 0.8623 AUC 0.9649  ce 0.383  rec 0.03384  poisson 0.01707  kappa_sub 4.111e-06  theta_e_px 25.94  defl_sub 6.296e-05  [105s] *
+  ep   8/25  train loss 0.3842 acc 0.8646  val loss 0.3715 acc 0.8717 AUC 0.9687  ce 0.3476  rec 0.0331  poisson 0.01693  kappa_sub 2.757e-06  theta_e_px 25.99  defl_sub 6.099e-05  [106s] *
+  ep   9/25  train loss 0.3560 acc 0.8763  val loss 0.3201 acc 0.8833 AUC 0.9761  ce 0.3185  rec 0.03393  poisson 0.01799  kappa_sub 2.425e-06  theta_e_px 25.94  defl_sub 6.057e-05  [106s] *
+  ep  10/25  train loss 0.3277 acc 0.8871  val loss 0.3092 acc 0.8857 AUC 0.9765  ce 0.2929  rec 0.03137  poisson 0.01664  kappa_sub 1.725e-06  theta_e_px 26.01  defl_sub 5.682e-05  [107s] *
+  ep  11/25  train loss 0.3098 acc 0.8941  val loss 0.3022 acc 0.8967 AUC 0.9812  ce 0.2762  rec 0.03044  poisson 0.01553  kappa_sub 1.053e-06  theta_e_px 26.02  defl_sub 5.404e-05  [106s] *
+  ep  12/25  train loss 0.2927 acc 0.9024  val loss 0.2929 acc 0.8993 AUC 0.9797  ce 0.2584  rec 0.03121  poisson 0.01548  kappa_sub 8.267e-07  theta_e_px 25.95  defl_sub 5.292e-05  [106s]
+  ep  13/25  train loss 0.2737 acc 0.9102  val loss 0.2511 acc 0.9120 AUC 0.9845  ce 0.2414  rec 0.02928  poisson 0.01471  kappa_sub 8.449e-07  theta_e_px 25.98  defl_sub 5.166e-05  [106s] *
+  ep  14/25  train loss 0.2566 acc 0.9135  val loss 0.2595 acc 0.9133 AUC 0.9846  ce 0.2254  rec 0.02839  poisson 0.01369  kappa_sub 6.952e-07  theta_e_px 25.99  defl_sub 4.964e-05  [106s] *
+  ep  15/25  train loss 0.2408 acc 0.9203  val loss 0.2401 acc 0.9160 AUC 0.9853  ce 0.2109  rec 0.02725  poisson 0.0131  kappa_sub 3.224e-07  theta_e_px 26.03  defl_sub 4.558e-05  [106s] *
+  ep  16/25  train loss 0.2296 acc 0.9245  val loss 0.2360 acc 0.9210 AUC 0.9872  ce 0.2016  rec 0.02544  poisson 0.01183  kappa_sub 3.27e-07  theta_e_px 26  defl_sub 4.499e-05  [105s] *
+  ep  17/25  train loss 0.2145 acc 0.9289  val loss 0.2406 acc 0.9177 AUC 0.9862  ce 0.1877  rec 0.0244  poisson 0.0118  kappa_sub 3.008e-07  theta_e_px 26.01  defl_sub 4.045e-05  [105s]
+  ep  18/25  train loss 0.2044 acc 0.9326  val loss 0.2207 acc 0.9233 AUC 0.9886  ce 0.1793  rec 0.02288  poisson 0.01028  kappa_sub 2.366e-07  theta_e_px 26.05  defl_sub 3.899e-05  [105s] *
+  ep  19/25  train loss 0.1956 acc 0.9355  val loss 0.2332 acc 0.9243 AUC 0.9887  ce 0.1726  rec 0.02085  poisson 0.009784  kappa_sub 2.539e-07  theta_e_px 26  defl_sub 3.893e-05  [105s] *
+  ep  20/25  train loss 0.1857 acc 0.9385  val loss 0.2183 acc 0.9257 AUC 0.9892  ce 0.164  rec 0.01952  poisson 0.009471  kappa_sub 2.689e-07  theta_e_px 26  defl_sub 3.842e-05  [105s] *
+  ep  21/25  train loss 0.1812 acc 0.9392  val loss 0.2085 acc 0.9297 AUC 0.9895  ce 0.1611  rec 0.0181  poisson 0.008884  kappa_sub 2.757e-07  theta_e_px 25.99  defl_sub 3.642e-05  [106s] *
+  ep  22/25  train loss 0.1734 acc 0.9425  val loss 0.2058 acc 0.9303 AUC 0.9902  ce 0.1545  rec 0.01707  poisson 0.008384  kappa_sub 2.79e-07  theta_e_px 25.99  defl_sub 3.383e-05  [107s] *
+  ep  23/25  train loss 0.1689 acc 0.9433  val loss 0.2074 acc 0.9293 AUC 0.9902  ce 0.1511  rec 0.01604  poisson 0.008009  kappa_sub 2.775e-07  theta_e_px 26.01  defl_sub 3.337e-05  [107s] *
+  ep  24/25  train loss 0.1656 acc 0.9460  val loss 0.2033 acc 0.9297 AUC 0.9905  ce 0.1481  rec 0.01564  poisson 0.008021  kappa_sub 2.777e-07  theta_e_px 26.02  defl_sub 3.409e-05  [106s] *
+  ep  25/25  train loss 0.1630 acc 0.9444  val loss 0.2022 acc 0.9290 AUC 0.9904  ce 0.1459  rec 0.01525  poisson 0.008075  kappa_sub 2.786e-07  theta_e_px 25.99  defl_sub 3.473e-05  [106s]
+[pinn3_lambda0.1] best epoch 24  test acc 0.9329  test macro AUC 0.9887
