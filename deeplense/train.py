@@ -6,6 +6,8 @@
 - Optional backbone freezing for the first `freeze_epochs` (head-only warm-up), the
   standard two-stage recipe for fine-tuning pretrained networks.
 - Best epoch chosen on validation macro AUC; the test set is only touched once, at the end.
+- Optional mixed precision (`amp`, CUDA only) and per-epoch checkpoints (`last.pt`) so an
+  interrupted run (e.g. a Colab disconnect) resumes from the last finished epoch.
 """
 
 import copy
@@ -34,6 +36,7 @@ class TrainConfig:
     grad_clip: float = 1.0
     patience: int | None = None          # early stopping on val macro AUC
     log_every: int = 0                   # batches; 0 = only per epoch
+    amp: bool = False                    # fp16 autocast + GradScaler (CUDA only)
     extra: dict = field(default_factory=dict)
 
 
@@ -72,22 +75,32 @@ def _set_backbone_trainable(model, flag: bool):
         p.requires_grad_(flag)
 
 
-def _run_epoch(model, loader, criterion, device, optimizer=None, scheduler=None, cfg=None):
+def _run_epoch(model, loader, criterion, device, optimizer=None, scheduler=None, cfg=None, scaler=None):
     train = optimizer is not None
     model.train(train)
     totals, correct, seen = {}, 0, 0
     t0 = time.time()
+    use_amp = scaler is not None
     with torch.set_grad_enabled(train):
         for step, (x, y) in enumerate(loader, 1):
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
-            out = model(x)
-            loss, terms = criterion(out, y)
+            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):
+                out = model(x)
+                loss, terms = criterion(out, y)
             if train:
                 optimizer.zero_grad(set_to_none=True)
-                loss.backward()
+                if use_amp:
+                    scaler.scale(loss).backward()
+                    scaler.unscale_(optimizer)
+                else:
+                    loss.backward()
                 if cfg.grad_clip:
                     nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
-                optimizer.step()
+                if use_amp:
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    optimizer.step()
                 scheduler.step()
             bs = y.size(0)
             for k, v in {"loss": loss.item(), **terms}.items():
@@ -102,8 +115,12 @@ def _run_epoch(model, loader, criterion, device, optimizer=None, scheduler=None,
     return stats
 
 
-def fit(model, loaders, cfg: TrainConfig, device, criterion=None, out_dir=None, run_name="run"):
-    """Train, keep the best-val-AUC weights, evaluate on test. Returns (model, results)."""
+def fit(model, loaders, cfg: TrainConfig, device, criterion=None, out_dir=None, run_name="run", resume=False):
+    """Train, keep the best-val-AUC weights, evaluate on test. Returns (model, results).
+
+    With `out_dir`, a full checkpoint is written to <out_dir>/<run_name>/last.pt after every
+    epoch; `resume=True` continues from it if present.
+    """
     model.to(device)
     criterion = criterion or CELoss(cfg.label_smoothing)
     optimizer = torch.optim.AdamW(_param_groups(model, cfg), weight_decay=cfg.weight_decay)
@@ -114,14 +131,29 @@ def fit(model, loaders, cfg: TrainConfig, device, criterion=None, out_dir=None, 
     lr_lambda = lambda s: (s + 1) / warm if s < warm else 0.5 * (1 + math.cos(math.pi * (s - warm) / max(1, total - warm)))
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
-    history, best_auc, best_state, best_epoch, stale = {}, -1.0, None, 0, 0
+    scaler = torch.amp.GradScaler("cuda") if cfg.amp and device.type == "cuda" else None
+
+    history, best_auc, best_state, best_epoch, stale, start = {}, -1.0, None, 0, 0, 1
+    run_dir = Path(out_dir) / run_name if out_dir is not None else None
+    ckpt_path = run_dir / "last.pt" if run_dir is not None else None
+    if resume and ckpt_path is not None and ckpt_path.exists():
+        ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(ck["model"])
+        optimizer.load_state_dict(ck["optimizer"])
+        scheduler.load_state_dict(ck["scheduler"])
+        if scaler is not None and ck.get("scaler"):
+            scaler.load_state_dict(ck["scaler"])
+        history, best_auc, best_state = ck["history"], ck["best_auc"], ck["best_state"]
+        best_epoch, stale, start = ck["best_epoch"], ck["stale"], ck["epoch"] + 1
+        print(f"[{run_name}] resumed from {ckpt_path} at epoch {start}")
+
     print(f"[{run_name}] {count_params(model):,} trainable params | device={device} | "
           f"train={len(loaders['train'].dataset)} val={len(loaders['val'].dataset)} test={len(loaders['test'].dataset)}")
 
-    for epoch in range(1, cfg.epochs + 1):
+    for epoch in range(start, cfg.epochs + 1):
         _set_backbone_trainable(model, epoch > cfg.freeze_epochs)
         t0 = time.time()
-        tr = _run_epoch(model, loaders["train"], criterion, device, optimizer, scheduler, cfg)
+        tr = _run_epoch(model, loaders["train"], criterion, device, optimizer, scheduler, cfg, scaler)
         va = _run_epoch(model, loaders["val"], criterion, device)
         va_auc = classification_metrics(*predict(model, loaders["val"], device))["macro_auc"]
 
@@ -141,6 +173,14 @@ def fit(model, loaders, cfg: TrainConfig, device, criterion=None, out_dir=None, 
         print(f"  ep {epoch:>3}/{cfg.epochs}  train loss {tr['loss']:.4f} acc {tr['acc']:.4f}  "
               f"val loss {va['loss']:.4f} acc {va['acc']:.4f} AUC {va_auc:.4f}  {extra}  "
               f"[{time.time() - t0:.0f}s]{' *' if improved else ''}", flush=True)
+        if ckpt_path is not None:
+            run_dir.mkdir(parents=True, exist_ok=True)
+            tmp = ckpt_path.with_suffix(".tmp")
+            torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(),
+                        "scheduler": scheduler.state_dict(), "scaler": scaler.state_dict() if scaler else None,
+                        "history": history, "best_auc": best_auc, "best_state": best_state,
+                        "best_epoch": best_epoch, "stale": stale, "epoch": epoch}, tmp)
+            tmp.replace(ckpt_path)     # atomic: a disconnect mid-save can't corrupt last.pt
         if cfg.patience and stale >= cfg.patience:
             print(f"  early stop: no val AUC improvement for {cfg.patience} epochs")
             break

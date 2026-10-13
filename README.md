@@ -53,9 +53,16 @@ Without the loss, the maps are unconstrained and unphysical. Either way classifi
 shared EfficientNet backbone, which is why both variants tie the baseline. The diagnostic is in
 `notebooks/03_pinn_poisson.ipynb`.
 
-**Next:** anchor the potential with a parametric macro-lens, ψ = ψ_SIS(θ_E, centre) + δψ, and tie δψ
-to a substructure convergence κ_sub through the Poisson loss. This removes the zero-deflection
-solution and focuses the physics signal on substructure.
+v1 also applied the lens equation in the wrong direction: it evaluated the *observed image* at
+θ − α(θ), which re-lenses the image instead of reconstructing the source. Because it learned α ≈ 0,
+this had no effect on the results above, but it is fixed in v2.
+
+**PINN v2 (in progress, `deeplense/models/pinn_lens.py`).** The network predicts an SIS + external
+shear macro-lens and an elliptical Gaussian source for each image. It renders the image with the lens
+equation, Î(θ) = S(θ − α(θ)), and must reconstruct the input. A learned perturbation δψ is tied to a
+non-negative substructure convergence κ_sub by the Poisson loss. On a 2.7k-image check, v2 learns
+Einstein radii of ~27 px (v1: ~0 px) and reconstructs the rings with median R² ≈ 0.86. Full results
+pending.
 
 ![PINN physics maps](results/pinn_lambda0.1/physics_maps.png)
 
@@ -72,7 +79,9 @@ deeplense/                 importable package
   models/
     cnn.py                 LensingCNN
     efficientnet.py        EfficientNet-B0 with 1-channel stem
-    pinn.py                LensingPINN + PINNLoss (CE + λ·‖∇²ψ̂ − 2κ̂‖²)
+    pinn.py                PINN v1 + PINNLoss (CE + λ·‖∇²ψ̂ − 2κ̂‖²); superseded, see findings
+    pinn_lens.py           PINN v2: SIS+shear macro-lens + Gaussian source, rendered with the lens
+                           equation; Poisson loss on the substructure perturbation (δψ ↔ κ_sub)
     deit.py                DeiT-Tiny, 1-channel, 160-px padding, attention rollout
   train.py                 shared training loop (warm-up+cosine, discriminative LR, freezing)
   metrics.py               ROC/AUC, confusion matrix, plots
@@ -84,6 +93,7 @@ notebooks/
   03_pinn_poisson          physics derivation, ψ̂/κ̂/Ŝ maps, λ ablation
   04_deit_tiny             attention rollout
   05_model_comparison
+  colab_train_pinn2        train PINN v2 on a Colab T4 (AMP, per-epoch checkpoints on Drive, resume)
 results/<run>/             metrics.json, history.json, figures (checkpoints are git-ignored)
 legacy/                    original notebooks, kept for reference
 ```

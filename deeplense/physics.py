@@ -54,17 +54,51 @@ def identity_grid(b: int, h: int, w: int, device=None, dtype=None) -> torch.Tens
     return torch.stack([gx, gy], dim=-1).expand(b, h, w, 2)
 
 
-def ray_trace(image: torch.Tensor, alpha: torch.Tensor) -> torch.Tensor:
-    """Map the observed image back to the source plane with the lens equation.
+def ray_trace(source: torch.Tensor, alpha: torch.Tensor) -> torch.Tensor:
+    """Render a lensed image from a gridded source:  I(theta) = S(theta - alpha(theta)).
 
-    For every image-plane pixel theta we compute beta = theta - alpha(theta) and read the
-    image at beta. For a correct deflection field this "de-lenses" arcs toward the
-    compact source, which is the physically meaningful representation the classifier
-    receives.
+    This is the forward direction of the lens equation (surface brightness is conserved
+    along rays). Note: v1 of the PINN applied this to the *observed image*, i.e.
+    I(theta - alpha), which lenses the image again rather than reconstructing the source.
+    That was a modelling error (masked by v1 learning alpha ~ 0); v2 renders an explicit
+    source instead.
 
-    image: (B, 1, H, W), alpha: (B, 2, H, W) in normalised units.
+    source: (B, 1, H, W), alpha: (B, 2, H, W) in normalised units.
     """
-    b, _, h, w = image.shape
-    theta = identity_grid(b, h, w, image.device, image.dtype)
+    b, _, h, w = source.shape
+    theta = identity_grid(b, h, w, source.device, source.dtype)
     beta = theta - alpha.permute(0, 2, 3, 1)
-    return F.grid_sample(image, beta, mode="bilinear", padding_mode="zeros", align_corners=True)
+    return F.grid_sample(source, beta, mode="bilinear", padding_mode="zeros", align_corners=True)
+
+
+# ── Analytic macro-lens (v2 PINN) ─────────────────────────────────────────────────────
+# Parameters are per-image tensors of shape (B,). Coordinates are normalised [-1, 1].
+
+def sis_shear_deflection(theta, theta_e, cx, cy, g1, g2, core: float = 0.005):
+    """Deflection of a (softened) singular isothermal sphere plus external shear.
+
+        psi_SIS   = theta_E * sqrt(|theta - c|^2 + s^2)      ->  kappa = theta_E (r^2 + 2 s^2) / (2 (r^2 + s^2)^1.5)
+        psi_shear = 1/2 g1 (x^2 - y^2) + g2 x y               ->  kappa = 0 (no mass)
+
+    Both terms satisfy the Poisson equation analytically, so only the learned
+    perturbation needs the finite-difference constraint. theta: (B, H, W, 2) -> (B, 2, H, W).
+    """
+    v = lambda t: t[:, None, None]
+    dx, dy = theta[..., 0] - v(cx), theta[..., 1] - v(cy)
+    r = torch.sqrt(dx ** 2 + dy ** 2 + core ** 2)
+    ax = v(theta_e) * dx / r + v(g1) * dx + v(g2) * dy
+    ay = v(theta_e) * dy / r + v(g2) * dx - v(g1) * dy
+    return torch.stack([ax, ay], dim=1)
+
+
+def gaussian_source(beta, sx, sy, sigma, q, phi, amp):
+    """Elliptical Gaussian surface brightness evaluated at source-plane positions beta.
+
+    beta: (B, H, W, 2); q in (0, 1] is the axis ratio, phi the position angle -> (B, 1, H, W).
+    """
+    v = lambda t: t[:, None, None]
+    bx, by = beta[..., 0] - v(sx), beta[..., 1] - v(sy)
+    c, s = torch.cos(v(phi)), torch.sin(v(phi))
+    u, w = c * bx + s * by, -s * bx + c * by
+    su, sw = v(sigma) / torch.sqrt(v(q)), v(sigma) * torch.sqrt(v(q))
+    return (v(amp) * torch.exp(-0.5 * ((u / su) ** 2 + (w / sw) ** 2)))[:, None]

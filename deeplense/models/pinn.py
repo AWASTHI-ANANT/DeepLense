@@ -1,4 +1,10 @@
-"""Physics-Informed Neural Network for substructure classification.
+"""Physics-Informed Neural Network for substructure classification (v1, superseded by pinn_lens.py).
+
+Known problems, kept for reproducibility of results/pinn_lambda*:
+  * With lambda > 0 the decoder converges to the trivial solution psi ~ 0, kappa ~ const,
+    which satisfies the Poisson term while learning no lensing (deflection ~0.15 px).
+  * S_hat = I(theta - alpha) re-lenses the observed image; it is not a source reconstruction.
+See LensingPINNv2 for the fix.
 
 Architecture
 ------------
